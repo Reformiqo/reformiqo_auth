@@ -2,8 +2,6 @@ import frappe
 from frappe import auth
 import base64
 from frappe_doc import bruno
-from jsms.config.otp import generate_signup_otp
-from jsms.config.config import header_type
 
 @frappe.whitelist( allow_guest=True )
 @bruno("post")
@@ -51,7 +49,7 @@ def login(usr, pwd):
 def generate_keys():
     user = frappe.session.user
     user_details = frappe.get_doc('User', user)
-    api_secret = f"jksms_{frappe.generate_hash(length=20)}"
+    api_secret = frappe.generate_hash(length=20)
 
     api_key = frappe.generate_hash(length=15)
     user_details.api_key = api_key
@@ -161,7 +159,6 @@ def signup(
             "phone":phone_number,
             "username": email,
             "new_password":password,
-            "role_profile_name": "SMS User",
             "send_welcome_email": 0
         })
         user.insert(ignore_permissions=True)
