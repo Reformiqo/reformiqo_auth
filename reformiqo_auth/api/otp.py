@@ -13,8 +13,6 @@ import secrets
 from datetime import datetime, timedelta
 from frappe.utils import getdate, cint
 
-config = frappe.get_site_config()
-
 
 
 @frappe.whitelist(allow_guest=True)
@@ -144,20 +142,22 @@ def verify_signup_otp(otp_code, email:str):
 
 
 @frappe.whitelist(allow_guest=True)
+@bruno("post")
 def send_otp_via_email(recipient_name, recipient_email, otp):
     url = "https://api.zeptomail.com/v1.1/email/template"
+    config = frappe.get_doc("Zeptomail Settings")
 
     payload = {
         "template_key": config.get("template_key"),
-        "from": {"address": "app@erpera.io", "name": "Erpera"},
+        "from": {"address": "app@erpera.io", "name": config.get("product_name")},
         "to": [{"email_address": {"address": recipient_email, "name": recipient_name}}],
         "merge_info": {
                     "product name": config.get("product_name"),
-                    "product": config.get("product"),
+                    "product": config.get("product_name"),
                     "OTP": otp,
                     "valid_time": "10 minutes",
-                    "support id": config.get("support_id"),
-                    "brand": config.get("brand")
+                    "support id": config.get("support_email"),
+                    "brand": config.get("product_name")
                 },
         "reply_to": [{"address": "support@reformiqo.com", "name": "Reformiqo Support"}],
         "client_reference": "OTP_VERIFICATION",
@@ -166,7 +166,7 @@ def send_otp_via_email(recipient_name, recipient_email, otp):
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
-        "Authorization": config.get("zepto_mail_api_key"),
+        "Authorization": config.get_password("api_key"),
     }
 
     response = requests.post(url, headers=headers, data=json.dumps(payload))
